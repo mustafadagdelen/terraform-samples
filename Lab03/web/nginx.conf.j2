@@ -1,0 +1,36 @@
+user www-data; # The user that runs the webserver.
+events {}      # Events directive is required, else server wont start.
+
+http {
+
+  server {
+    # Redirect all port 80 to port 443 for TLS only!
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    server_name _;
+    return 301 https://$host$request_uri;
+  }
+
+  server {
+    listen      443 ssl http2 default_server;
+    listen [::]:443 ssl http2 default_server;
+
+    ssl_certificate     {{ cert_path }};
+    ssl_certificate_key {{ key_path }};
+
+    server_name {{ servername }};
+
+    root /var/www/html;
+    index index.html index.php;
+
+    # This is the php fast-cgi settings.
+    location ~\.php$ {
+        try_files $uri =404; # This directive makes sure that the file exist, else it will return a 404 - not found.
+        fastcgi_pass  unix:/run/php/php7.0-fpm.sock;
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        include       fastcgi_params;
+    }
+  }
+
+}

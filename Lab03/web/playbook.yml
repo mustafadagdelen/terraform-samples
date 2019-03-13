@@ -1,0 +1,47 @@
+---
+- name: Webserver installation
+  hosts: webservers
+  remote_user: root
+  become: true
+  vars:
+    servername: my.domain.tdl
+    cert_path: /etc/ssl/certs/my.domain.tdl.crt
+    key_path: /etc/ssl/certs/my.domain.tdl.key
+
+  tasks:
+    - name: Install UFW
+      apt:
+        name: ufw
+        state: present
+    - name: Setup rules
+      command: "{{ item }}"
+      with_items:
+        - ufw default deny incoming
+        - ufw allow ssh
+        - ufw allow http
+        - ufw allow https
+        - ufw --force enable
+    - name: Install php
+      apt:
+        name: php-fpm
+        state: present
+    - name: install nginx
+      apt:
+        name: nginx
+        state: present
+    - name: Copy nginx configuration.
+      template:
+        src: nginx.conf.j2
+        dest: /etc/nginx/nginx.conf
+    - name: Copy php file!
+      template:
+        src: index.php
+        dest: /var/www/html/index.php
+    - name: Start fpm
+      service:
+        name: php7.0-fpm
+        state: started
+    - name: Start nginx
+      service:
+        name: nginx
+        state: started
